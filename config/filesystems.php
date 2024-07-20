@@ -46,14 +46,37 @@ return [
 
         's3' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
+            'key' => env('AWS_ACCESS_KEY_ID', 'DO00DAVX2NRPZKBPTJ47'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY', 'ICr+whVW6uE42mCUsW1YgzwYJnj0pmq6qbF8SoxL0vg'),
+            'region' => env('AWS_DEFAULT_REGION', 'sgp1'),
+            'bucket' => env('AWS_BUCKET', 'design-dev'),
+            'url' => env('AWS_URL', 'https://sgp1.digitaloceanspaces.com'),
+            'endpoint' => env('AWS_ENDPOINT', 'https://sgp1.digitaloceanspaces.com'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
+        ],
+
+        'do' => [
+            'driver' => 's3',
+            'key' => env('DO_ACCESS_KEY_ID'),
+            'secret' => env('DO_SECRET_ACCESS_KEY'),
+            'region' => env('DO_DEFAULT_REGION'),
+            'bucket' => env('DO_BUCKET'),
+            'folder' => env('DO_FOLDER'),
+            'cdn_endpoint' => env('DO_CDN_ENDPOINT'),
+            'cdn_design_endpoint' => env('DO_CDN_DESIGN_ENDPOINT', ''),
+            'url' => env('DO_CDN_ENDPOINT'),
+            'endpoint' => env('DO_ENDPOINT'),
+            'use_path_style_endpoint' => env('DO_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'public',
+        ],
+
+        'google' => [
+            'driver' => 'google',
+            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'),
         ],
 
     ],

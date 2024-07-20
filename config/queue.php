@@ -67,24 +67,33 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 120),
             'block_for' => null,    
             'after_commit' => false,
         ],
 
         'rabbitmq' => [
-    
             'driver' => 'rabbitmq',
+            'queue' => env('RABBITMQ_QUEUE', 'default'),
+            'connection' => PhpAmqpLib\Connection\AMQPLazyConnection::class,
             'hosts' => [
                 [
-                    'host' => env('RABBITMQ_HOST', '127.0.0.1'),
+                    'host' => env('RABBITMQ_HOST', '172.17.0.4'),
                     'port' => env('RABBITMQ_PORT', 5672),
-                    'user' => env('RABBITMQ_USER', 'guest'),
-                    'password' => env('RABBITMQ_PASSWORD', 'guest'),
+                    'user' => env('RABBITMQ_USER', 'admin'),
+                    'password' => env('RABBITMQ_PASSWORD', '12345678'),
                     'vhost' => env('RABBITMQ_VHOST', '/'),
                 ],
                 // ...
             ],
+            'options' => [
+                'queue' => [
+                    
+                    'job' => VladimirYuldashev\LaravelQueueRabbitMQ\Queue\Jobs\RabbitMQJob::class,
+                ],
+            ],
+
+            'worker' => env('RABBITMQ_WORKER', 'horizon'),
      
             // ...
          ],

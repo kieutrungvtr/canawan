@@ -26,7 +26,7 @@ class CleanUpPushingCommand extends Command
      */
     public function handle()
     {
-        $batch = 2;
+        $batch = intval(config('distribution.batch'));
         $pushingService = new PushingService();
         $pushingService->backlogFlag(true);
         $pushingService->process("PullDesignJob", $batch);

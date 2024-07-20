@@ -181,16 +181,16 @@ return [
 
     'defaults' => [
         'supervisor-code-base' => [
-            'connection' => 'redis',
-            'queue' => ['pull_design', 'pull_product'],
+            'connection' => 'rabbitmq',
+            'queue' => env('HORIZON_QUEUE'),
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 5,
+            'maxProcesses' => env('HORIZON_WORKER_MAX_PROCESS', 10),
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
-            'tries' => 1,
-            'timeout' => 120,
+            'tries' => env('HORIZON_WORKER_TRIES', 3),
+            'timeout' => env('HORIZON_WORKER_TIME_OUT', 240),
             'nice' => 0,
         ],
     ],
@@ -198,16 +198,15 @@ return [
     'environments' => [
         'production' => [
             'supervisor-code-base' => [
-                'maxProcesses' => 10,
-                'balanceMaxShift' => 1,
-                'balanceCooldown' => 3,
+                'minProcesses' => env('HORIZON_WORKER_MIN_PROCESS', 1),
+                'maxProcesses' => env('HORIZON_WORKER_MAX_PROCESS', 10),
             ],
         ],
 
         'local' => [
             'supervisor-code-base' => [
-                'minProcesses' => 1,
-                'maxProcesses' => 4,
+                'minProcesses' => env('HORIZON_WORKER_MIN_PROCESS', 1),
+                'maxProcesses' => env('HORIZON_WORKER_MAX_PROCESS', 10),
             ],
         ],
     ],

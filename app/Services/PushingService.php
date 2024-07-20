@@ -2,17 +2,28 @@
 
 namespace App\Services;
 
-use App\Jobs\PullDesignJob;
+use App\Http\Requests\ProvideDataDistributionRequest;
 use App\Models\Sql\DistributionQueue;
+use App\Models\Sql\DistributionQueueStatus;
+use App\Models\Sql\DistributionRequest;
+use App\Models\Sql\Distributions;
+use App\Models\Sql\DistributionStates;
+use App\Queue\Jobs\RabbitMQJob;
 use App\Repositories\Sql\DistributionQueueRepository;
+use App\Repositories\Sql\DistributionRepository;
 use Carbon\Carbon;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 
 class PushingService
 {
-    private $distributionQueueRepository;
+    private $distributionRepository;
+
+    private $distributionStateRepository;
 
     private $quota = 4;
 
@@ -21,9 +32,23 @@ class PushingService
      */
     private $backLogFlag = false;
 
+    private $optionRequestId = null;
+
+    private $optionSync = false;
+
     public function backlogFlag($value)
     {
         $this->backLogFlag = $value;
+    }
+
+    public function optionRequestId($value)
+    {
+        $this->optionRequestId = $value;
+    }
+
+    public function optionSync($value)
+    {
+        $this->optionSync = $value;
     }
 
     private function queueName($jobName)
@@ -37,31 +62,43 @@ class PushingService
      */
     public function __construct()
     {
-        $this->distributionQueueRepository = new DistributionQueueRepository();
+        $this->distributionRepository = new DistributionRepository();
+        $this->distributionStateRepository = new DistributionStates();
     }
 
-    public function init()
+    /**
+     * @param ProvideDataDistributionRequest $distributionData
+     */
+    public function init(ProvideDataDistributionRequest $distributionData)
     {
+        $validatedData = $distributionData->validated();
+        // foreach ($validatedData as $data) {
+
+        // }
         
+        return Distributions::insert($validatedData[Distributions::TABLE_NAME]);
     }
 
     public function pre($id)
     {
-        $this->distributionQueueRepository->update(
-            $id,
+        $this->distributionStateRepository->create(
             [
-                DistributionQueue::COL_DISTRIBUTION_QUEUE_STATUS => DistributionQueue::DISTRIBUTION_QUEUE_STATUS_PUSHED
+                DistributionStates::COL_FK_DISTRIBUTION_ID => $id,
+                DistributionStates::COL_DISTRIBUTION_STATE_VALUE => DistributionStates::DISTRIBUTION_STATES_PUSHED,
+                DistributionStates::COL_DISTRIBUTION_STATE_CREATED_AT => now()
             ]
         ); 
          
     }
 
-    public function post($id, $status)
+    public function post($id, $status, $log = null)
     {
-        $this->distributionQueueRepository->update(
-            $id,
+        $this->distributionStateRepository->create(
             [
-                DistributionQueue::COL_DISTRIBUTION_QUEUE_STATUS => $status
+                DistributionStates::COL_FK_DISTRIBUTION_ID => $id,
+                DistributionStates::COL_DISTRIBUTION_STATE_VALUE => $status,
+                DistributionStates::COL_DISTRIBUTION_STATE_LOG => $log,
+                DistributionStates::COL_DISTRIBUTION_STATE_CREATED_AT => now(),
             ]
         ); 
     }
@@ -85,28 +122,39 @@ class PushingService
      */
     public function process($jobName, $batch = 10, $mixFlag = false)
     {
-        $itemPushed = $this->distributionQueueRepository->countByStatus(DistributionQueue::DISTRIBUTION_QUEUE_STATUS_PUSHED);
-        if ($itemPushed >= $this->quota) {
-            print_r("Over quota: $this->quota");
-            echo PHP_EOL;
-            return;
+        $itemPushed = $this->distributionRepository->countByStatus(
+            DistributionStates::DISTRIBUTION_STATES_PUSHED
+        );
+        if ($itemPushed > $this->quota) {
+            return Response::make("Over quota $this->quota", 406);
         }
-        $dataGroupById = $this->distributionQueueRepository->search($batch);
+        $dataGroupById = $this->distributionRepository->search($jobName, $this->optionRequestId, $batch);
         $rawData = Arr::flatten($dataGroupById->toArray(), 1);
         $mixFlag ? $distributionQueueData = $this->mix($rawData) : $distributionQueueData = $rawData;
-        foreach ($distributionQueueData as $key => $value) {
-            $countRequest = $key + 1;
-            $uuid = $value[DistributionQueue::COL_DISTRIBUTION_QUEUE_REQUEST];  
-            $payload = json_decode($value[DistributionQueue::COL_DISTRIBUTION_QUEUE_PAYLOAD], true);
-            $designName = $payload['name'];
-            $url = $payload['url'];
-            echo PHP_EOL;
-            print_r("Request $countRequest : $uuid >> $designName >> Url: $url");
-            echo PHP_EOL;
-            $jobInstance = "\\App\\Jobs\\$jobName";
-            $jobs = (new $jobInstance($value))->onQueue($this->queueName($jobName))->delay(Carbon::now()->addSeconds(0));
-            dispatch($jobs);
-            $this->pre($value[DistributionQueue::COL_DISTRIBUTION_QUEUE_ID]);
+        var_dump($distributionQueueData);
+        try {
+            foreach ($distributionQueueData as $key => $value) {
+                $countRequest = $key + 1;
+                $uuid = $value[Distributions::COL_DISTRIBUTION_REQUEST_ID];  
+                $payload = json_decode($value[Distributions::COL_DISTRIBUTION_PAYLOAD], true);
+                $designName = $payload['name'] ?? '';
+                $url = $payload['url'] ?? '';
+                echo PHP_EOL;
+                print_r("Request $countRequest : $uuid >> $designName >> Url: $url");
+                echo PHP_EOL;
+                $jobInstance = "\\App\\Jobs\\$jobName";
+                $jobs = new $jobInstance($value);
+                if ($this->optionSync) {
+                    dispatch_sync($jobs);
+                } else {
+                    //Queue::pushOn($this->queueName($jobName), $jobs);
+                    $jobInstance::dispatch($value)->onQueue($this->queueName($jobName));
+                }
+                $this->pre($value[Distributions::COL_DISTRIBUTION_ID]);
+            }
+            return Response::make("$countRequest request pushed", 200);
+        } catch (\Exception $e) {
+            return Response::make($e->getMessage(), 503);
         }
     }
 }

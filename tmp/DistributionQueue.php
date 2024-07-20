@@ -8,7 +8,7 @@ namespace App\Models\Sql;
 
 use App\Models\BaseModel;
 #---- Begin package usage -----#
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 #---- Ended package usage -----#
 
 class DistributionQueue extends BaseModel
@@ -83,6 +83,26 @@ class DistributionQueue extends BaseModel
      */
     const COL_UPDATED_AT = 'updated_at';
 
+    /**
+     * @var string
+     */
+    const COL_DISTRIBUTION_QUEUE_JOB_NAME = 'distribution_queue_job_name';
+
+    /**
+     * @var string
+     */
+    const COL_DISTRIBUTION_QUEUE_INIT_AT = 'distribution_queue_init_at';
+
+    /**
+     * @var string
+     */
+    const COL_DISTRIBUTION_QUEUE_FAILED_AT = 'distribution_queue_failed_at';
+
+    /**
+     * @var string
+     */
+    const COL_DISTRIBUTION_QUEUE_FINISH_AT = 'distribution_queue_finish_at';
+
     
 
     /**
@@ -91,11 +111,20 @@ class DistributionQueue extends BaseModel
     const TABLE_NAME = 'distribution_queue';
 
     #---- Begin custom code -----#
-    protected $fillable = ["distribution_queue_status"];
+    protected $fillable = ["distribution_queue_id", "distribution_queue_status", "distribution_queue_finish_at",
+     "distribution_queue_failed_at", "distribution_queue_init_at"];
 
     const DISTRIBUTION_QUEUE_STATUS_INIT = 'init';
     const DISTRIBUTION_QUEUE_STATUS_PUSHED = 'pushed';
     const DISTRIBUTION_QUEUE_STATUS_FINISH = 'finish';
     const DISTRIBUTION_QUEUE_STATUS_FAILED = 'failed';
+
+    /**
+     * Get the status for the distirbution queue.
+     */
+    public function status(): HasMany
+    {
+        return $this->hasMany(DistributionQueueStatus::class);
+    }
     #---- Ended custom code -----#
 }

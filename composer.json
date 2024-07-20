@@ -6,11 +6,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "google/apiclient": "^2.15",
         "laravel/framework": "^11.9",
         "laravel/horizon": "^5.24",
         "laravel/tinker": "^2.9",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "predis/predis": "^2.0",
-        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
+        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1",
+        "ytake/laravel-fluent-logger": "^7.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
