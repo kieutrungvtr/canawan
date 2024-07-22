@@ -86,7 +86,9 @@ class Distributions extends BaseModel
     const TABLE_NAME = 'distributions';
 
     #---- Begin custom code -----#
-    protected $fillable = [];
+    protected $fillable = [
+        
+    ];
 
     /**
      * Get the states for the distirbution.

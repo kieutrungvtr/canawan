@@ -6,6 +6,8 @@ use App\Libs\GoogleDrive;
 use App\Models\Sql\DesignImportRequestDetails;
 use App\Models\Sql\DesignImportRequests;
 use App\Models\Sql\DistributionQueue;
+use App\Models\Sql\Distributions;
+use App\Models\Sql\DistributionStates;
 use App\Repositories\Sql\DesignImportRequestsRepository;
 use App\Services\PushingService;
 use Carbon\Carbon;
@@ -64,8 +66,8 @@ class PullDesignJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $requestId = $this->data[DistributionQueue::COL_DISTRIBUTION_QUEUE_REQUEST];
-            $distributionQueueId = $this->data[DistributionQueue::COL_DISTRIBUTION_QUEUE_ID];
+            $requestId = $this->data[Distributions::COL_DISTRIBUTION_REQUEST_ID];
+            $distributionQueueId = $this->data[Distributions::COL_DISTRIBUTION_ID];
             $pushingService = new PushingService();
             $designImportRequestsRepository = new DesignImportRequestsRepository();
             $designData = $designImportRequestsRepository->getByRequestId($requestId);
@@ -138,12 +140,12 @@ class PullDesignJob implements ShouldQueue
                 ]
             );
             if ($response) {
-                $pushingService->post($distributionQueueId, DistributionQueue::DISTRIBUTION_QUEUE_STATUS_FINISH);
+                $pushingService->post($distributionQueueId, DistributionStates::DISTRIBUTION_STATES_COMPLETED);
             }
         } catch (Exception $e) {
             if (!empty($e->getMessage())) {
                 $pushingService = new PushingService();
-                $pushingService->post($distributionQueueId, DistributionQueue::DISTRIBUTION_QUEUE_STATUS_FAILED, $e->getMessage());
+                $pushingService->post($distributionQueueId, DistributionStates::DISTRIBUTION_STATES_FAILED, $e->getMessage());
                 DesignImportRequestDetails::where(
                     [
                         DesignImportRequestDetails::COL_DESIGN_ID => $requestId

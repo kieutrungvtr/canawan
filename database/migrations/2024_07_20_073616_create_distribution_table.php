@@ -16,20 +16,20 @@ return new class extends Migration
             $table->unsignedInteger('distribution_request_id');
             $table->longText('distribution_payload');
             $table->text('distribution_job_name');
-            $table->unsignedTinyInteger('distribution_priority');
-            $table->unsignedTinyInteger('distribution_created_by');
+            $table->unsignedTinyInteger('distribution_priority')->default(0);
+            $table->unsignedInteger('distribution_created_by')->default(0);
             $table->timestamp('distribution_created_at');
-            $table->timestamp('distribution_updated_at');
+            $table->timestamp('distribution_updated_at')->useCurrent();
         });
 
         Schema::create('distribution_states', function (Blueprint $table) {
             $table->bigIncrements('distribution_state_id');
             $table->unsignedBigInteger('fk_distribution_id');
             $table->enum('distribution_state_value', ['initial', 'pushed', 'processing', 'failed', 'completed']);
-            $table->text('distribution_state_log');
-            $table->longText('distribution_state_exception');
+            $table->text('distribution_state_log')->nullable();
+            $table->longText('distribution_state_exception')->nullable();
             $table->timestamp('distribution_state_created_at');
-            $table->timestamp('distribution_state_updated_at');
+            $table->timestamp('distribution_state_updated_at')->useCurrent();
 
             $table->foreign('fk_distribution_id')->references('distribution_id')->on('distributions');
         });

@@ -2,16 +2,12 @@
 
 namespace App\Services;
 
-use App\Http\Requests\ProvideDataDistributionRequest;
-use App\Models\Sql\DistributionQueue;
-use App\Models\Sql\DistributionQueueStatus;
-use App\Models\Sql\DistributionRequest;
+use App\Http\Requests\DistributionRequest;
 use App\Models\Sql\Distributions;
 use App\Models\Sql\DistributionStates;
-use App\Queue\Jobs\RabbitMQJob;
-use App\Repositories\Sql\DistributionQueueRepository;
 use App\Repositories\Sql\DistributionRepository;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Response;
@@ -67,21 +63,21 @@ class PushingService
     }
 
     /**
-     * @param ProvideDataDistributionRequest $distributionData
+     * @param  \App\Http\Requests\DistributionRequest  $request
      */
-    public function init(ProvideDataDistributionRequest $distributionData)
+    public function init(DistributionRequest $request)
     {
-        $validatedData = $distributionData->validated();
-        // foreach ($validatedData as $data) {
-
-        // }
-        
-        return Distributions::insert($validatedData[Distributions::TABLE_NAME]);
+        $validator = Validator::make($request->all(), $request->rules());
+        if ($validator->fails()) {
+            return $validator->messages()->toJson();
+        }
+        $arrDistributions = $request->input('distribution_request');
+        return $this->distributionRepository->initDistributionData($arrDistributions);
     }
 
     public function pre($id)
     {
-        $this->distributionStateRepository->create(
+        return $this->distributionStateRepository->create(
             [
                 DistributionStates::COL_FK_DISTRIBUTION_ID => $id,
                 DistributionStates::COL_DISTRIBUTION_STATE_VALUE => DistributionStates::DISTRIBUTION_STATES_PUSHED,
@@ -93,7 +89,7 @@ class PushingService
 
     public function post($id, $status, $log = null)
     {
-        $this->distributionStateRepository->create(
+        return $this->distributionStateRepository->create(
             [
                 DistributionStates::COL_FK_DISTRIBUTION_ID => $id,
                 DistributionStates::COL_DISTRIBUTION_STATE_VALUE => $status,
@@ -125,12 +121,15 @@ class PushingService
         $itemPushed = $this->distributionRepository->countByStatus(
             DistributionStates::DISTRIBUTION_STATES_PUSHED
         );
-        if ($itemPushed > $this->quota) {
+        if ($itemPushed >= $this->quota) {
             return Response::make("Over quota $this->quota", 406);
         }
         $dataGroupById = $this->distributionRepository->search($jobName, $this->optionRequestId, $batch);
         $rawData = Arr::flatten($dataGroupById->toArray(), 1);
         $mixFlag ? $distributionQueueData = $this->mix($rawData) : $distributionQueueData = $rawData;
+        if (count($distributionQueueData) == 0) {
+            return Response::make("Have not request to be process", 406);
+        }
         var_dump($distributionQueueData);
         try {
             foreach ($distributionQueueData as $key => $value) {

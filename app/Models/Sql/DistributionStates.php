@@ -81,7 +81,15 @@ class DistributionStates extends BaseModel
     const TABLE_NAME = 'distribution_states';
 
     #---- Begin custom code -----#
-    protected $fillable = [];
+    protected $fillable = [
+        self::COL_FK_DISTRIBUTION_ID,
+        self::COL_DISTRIBUTION_STATE_VALUE,
+        self::COL_DISTRIBUTION_STATE_LOG,
+        self::COL_DISTRIBUTION_STATE_EXCEPTION,
+        self::COL_DISTRIBUTION_STATE_CREATED_AT
+    ];
+
+    public $timestamps = false;
 
     const DISTRIBUTION_STATES_INIT = 'init';
     const DISTRIBUTION_STATES_PUSHED = 'pushed';

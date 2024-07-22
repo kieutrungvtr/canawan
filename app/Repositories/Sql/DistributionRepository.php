@@ -98,4 +98,12 @@ class DistributionRepository extends BaseSqlRepository
 
         return $data->count();
     }
+
+    public function initDistributionData($data)
+    {
+        array_walk($data, function (&$subArray) {
+            $subArray[Distributions::COL_DISTRIBUTION_CREATED_AT] = now();
+        });
+        return Distributions::insert($data);
+    }
 }

@@ -83,12 +83,6 @@ class Distributions extends BaseModel
     #---- Begin custom code -----#
     protected $fillable = [];
 
-    const DISTRIBUTION_STATUS_INIT = 'init';
-    const DISTRIBUTION_STATUS_PUSHED = 'pushed';
-    const DISTRIBUTION_STATUS_PROCESSING = 'processing';
-    const DISTRIBUTION_STATUS_FAILED = 'failed';
-    const DISTRIBUTION_STATUS_FINISH = 'completed';
-
     /**
      * Get the states for the distirbution.
      */
