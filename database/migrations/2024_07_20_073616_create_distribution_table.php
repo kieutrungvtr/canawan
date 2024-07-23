@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedInteger('distribution_request_id');
             $table->longText('distribution_payload');
             $table->text('distribution_job_name');
+            $table->tinyInteger('distribution_tries')->default(0);
             $table->unsignedTinyInteger('distribution_priority')->default(0);
             $table->unsignedInteger('distribution_created_by')->default(0);
             $table->timestamp('distribution_created_at');

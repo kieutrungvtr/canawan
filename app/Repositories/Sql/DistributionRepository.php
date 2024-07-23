@@ -5,7 +5,9 @@ namespace App\Repositories\Sql;
 use App\Models\Sql\Distributions;
 use App\Models\Sql\DistributionStates;
 use App\Repositories\BaseSqlRepository;
+use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 
 class DistributionRepository extends BaseSqlRepository
 {
@@ -37,8 +39,10 @@ class DistributionRepository extends BaseSqlRepository
     public function search($jobName, $requestId = null, $limit = 10)
     {
         $arrStatus = [
+            DistributionStates::DISTRIBUTION_STATES_PUSHED,
             DistributionStates::DISTRIBUTION_STATES_COMPLETED,
-            DistributionStates::DISTRIBUTION_STATES_PUSHED
+            DistributionStates::DISTRIBUTION_STATES_FAILED,
+            DistributionStates::DISTRIBUTION_STATES_PROCESSING
         ];
         $where = [
             Distributions::COL_DISTRIBUTION_JOB_NAME => $jobName
@@ -60,11 +64,11 @@ class DistributionRepository extends BaseSqlRepository
         return $data;
     }
 
-    public function searchBackLog($jobName, $requestId = null, $limit = 10)
+    public function searchBackLog($jobName, $requestId = null, $tries = 3, $timeRange = 1, $limit = 10)
     {
         $arrStatus = [
-            DistributionStates::DISTRIBUTION_STATES_COMPLETED,
-            DistributionStates::DISTRIBUTION_STATES_PUSHED
+            //DistributionStates::DISTRIBUTION_STATES_PUSHED,
+            DistributionStates::DISTRIBUTION_STATES_COMPLETED
         ];
         $where = [
             Distributions::COL_DISTRIBUTION_JOB_NAME => $jobName
@@ -72,10 +76,12 @@ class DistributionRepository extends BaseSqlRepository
         if ($requestId) {
             $where[Distributions::COL_DISTRIBUTION_REQUEST_ID] = $requestId;
         }
-        $data = Distributions::whereDoesntHave('states', function($query) use ($arrStatus) {
+        $data = Distributions::whereDoesntHave('states', function($query) use ($arrStatus, $timeRange) {
             $query->whereIn(DistributionStates::COL_DISTRIBUTION_STATE_VALUE, $arrStatus);
+            $query->where(DistributionStates::COL_DISTRIBUTION_STATE_UPDATED_AT, '>', now()->subHours($timeRange));
         })
         ->where($where)
+        ->where(Distributions::COL_DISTRIBUTION_TRIES, '<', $tries)
         ->orderBy(Distributions::COL_DISTRIBUTION_CREATED_AT, 'ASC')
         ->get()
         ->groupBy(Distributions::COL_DISTRIBUTION_REQUEST_ID)
@@ -99,11 +105,30 @@ class DistributionRepository extends BaseSqlRepository
         return $data->count();
     }
 
-    public function initDistributionData($data)
+    public function initDistributionData($distributions)
     {
-        array_walk($data, function (&$subArray) {
+        array_walk($distributions, function (&$subArray) {
             $subArray[Distributions::COL_DISTRIBUTION_CREATED_AT] = now();
         });
-        return Distributions::insert($data);
+        try {
+            DB::beginTransaction();
+            foreach ($distributions as $distribution) {
+                $insertResponse = Distributions::create($distribution);
+                if ($insertResponse) {
+                DistributionStates::insert(
+                    [
+                        DistributionStates::COL_FK_DISTRIBUTION_ID => $insertResponse->{Distributions::COL_DISTRIBUTION_ID},
+                        DistributionStates::COL_DISTRIBUTION_STATE_VALUE => DistributionStates::DISTRIBUTION_STATES_INIT,
+                        DistributionStates::COL_DISTRIBUTION_STATE_CREATED_AT => now()
+                    ]
+                );
+            }
+            }
+            DB::commit();
+            return Response::make("Distribution data initialization successful", 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return Response::make("Distribution data initialization failed" . $e->getMessage(), 400);
+        }
     }
 }

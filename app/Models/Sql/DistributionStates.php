@@ -91,7 +91,7 @@ class DistributionStates extends BaseModel
 
     public $timestamps = false;
 
-    const DISTRIBUTION_STATES_INIT = 'init';
+    const DISTRIBUTION_STATES_INIT = 'initial';
     const DISTRIBUTION_STATES_PUSHED = 'pushed';
     const DISTRIBUTION_STATES_PROCESSING = 'processing';
     const DISTRIBUTION_STATES_FAILED = 'failed';
@@ -101,6 +101,5 @@ class DistributionStates extends BaseModel
     {
         return $this->belongsTo(Distributions::class, 'distribution_id', 'fk_distribution_id');
     }
-    
     #---- Ended custom code -----#
 }

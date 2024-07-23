@@ -3,21 +3,17 @@
 namespace App\Console\Commands;
 
 use App\Libs\ELogger;
-use App\Models\Sql\DesignImportRequests;
-use App\Models\Sql\DistributionQueue;
 use App\Services\PushingService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
-class DemoPushing extends Command
+class DistributionPushing extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:demo-pushing {--request_id=} {--sync=}';
+    protected $signature = 'distribution:pushing {--request_id=} {--sync=}';
 
     /**
      * The console command description.

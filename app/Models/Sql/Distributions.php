@@ -61,6 +61,11 @@ class Distributions extends BaseModel
     /**
      * @var string
      */
+    const COL_DISTRIBUTION_TRIES = 'distribution_tries';
+
+    /**
+     * @var string
+     */
     const COL_DISTRIBUTION_PRIORITY = 'distribution_priority';
 
     /**
@@ -87,8 +92,15 @@ class Distributions extends BaseModel
 
     #---- Begin custom code -----#
     protected $fillable = [
-        
+        self::COL_DISTRIBUTION_REQUEST_ID,
+        self::COL_DISTRIBUTION_PAYLOAD,
+        self::COL_DISTRIBUTION_JOB_NAME,
+        self::COL_DISTRIBUTION_TRIES,
+        self::COL_DISTRIBUTION_CREATED_AT,
+        self::COL_DISTRIBUTION_UPDATED_AT
     ];
+
+    public $timestamps = false;
 
     /**
      * Get the states for the distirbution.

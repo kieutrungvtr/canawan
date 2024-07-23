@@ -81,6 +81,26 @@ class DistributionStates extends BaseModel
     const TABLE_NAME = 'distribution_states';
 
     #---- Begin custom code -----#
+    protected $fillable = [
+        self::COL_FK_DISTRIBUTION_ID,
+        self::COL_DISTRIBUTION_STATE_VALUE,
+        self::COL_DISTRIBUTION_STATE_LOG,
+        self::COL_DISTRIBUTION_STATE_EXCEPTION,
+        self::COL_DISTRIBUTION_STATE_CREATED_AT
+    ];
+
+    public $timestamps = false;
+
+    const DISTRIBUTION_STATES_INIT = 'initial';
+    const DISTRIBUTION_STATES_PUSHED = 'pushed';
+    const DISTRIBUTION_STATES_PROCESSING = 'processing';
+    const DISTRIBUTION_STATES_FAILED = 'failed';
+    const DISTRIBUTION_STATES_COMPLETED = 'completed';
+
+    public function distributions()
+    {
+        return $this->belongsTo(Distributions::class, 'distribution_id', 'fk_distribution_id');
+    }
     
     #---- Ended custom code -----#
 }

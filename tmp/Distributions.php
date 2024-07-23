@@ -56,6 +56,11 @@ class Distributions extends BaseModel
     /**
      * @var string
      */
+    const COL_DISTRIBUTION_JOB_NAME = 'distribution_job_name';
+
+    /**
+     * @var string
+     */
     const COL_DISTRIBUTION_PRIORITY = 'distribution_priority';
 
     /**
@@ -81,14 +86,21 @@ class Distributions extends BaseModel
     const TABLE_NAME = 'distributions';
 
     #---- Begin custom code -----#
-    protected $fillable = [];
+    protected $fillable = [
+        self::COL_DISTRIBUTION_REQUEST_ID,
+        self::COL_DISTRIBUTION_PAYLOAD,
+        self::COL_DISTRIBUTION_JOB_NAME,
+        self::COL_DISTRIBUTION_CREATED_AT
+    ];
+
+    public $timestamps = false;
 
     /**
      * Get the states for the distirbution.
      */
     public function states(): HasMany
     {
-        return $this->hasMany(DistributionStates::class);
+        return $this->hasMany(DistributionStates::class, DistributionStates::COL_FK_DISTRIBUTION_ID);
     }
     #---- Ended custom code -----#
 }

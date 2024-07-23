@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Libs\GoogleDrive;
 use App\Models\Sql\DesignImportRequestDetails;
 use App\Models\Sql\DesignImportRequests;
-use App\Models\Sql\DistributionQueue;
 use App\Models\Sql\Distributions;
 use App\Models\Sql\DistributionStates;
 use App\Repositories\Sql\DesignImportRequestsRepository;
@@ -17,8 +16,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -37,16 +34,6 @@ class PullDesignJob implements ShouldQueue
 
     protected $data;
 
-    public function setData($data)
-    {
-        $this->data = $data;
-    }
-
-    public function getData()
-    {
-        return $this->data;
-    }
-
     /**
      * Create a new job instance.
      */
@@ -57,7 +44,7 @@ class PullDesignJob implements ShouldQueue
 
     public function middleware()
     {
-        return [(new WithoutOverlapping('distribution_queue_request'))->dontRelease()];
+        return [(new WithoutOverlapping(Distributions::COL_DISTRIBUTION_REQUEST_ID))->dontRelease()];
     }
 
     /**
@@ -66,13 +53,14 @@ class PullDesignJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $requestId = $this->data[Distributions::COL_DISTRIBUTION_REQUEST_ID];
-            $distributionQueueId = $this->data[Distributions::COL_DISTRIBUTION_ID];
             $pushingService = new PushingService();
+            $distributionId = $this->data[Distributions::COL_DISTRIBUTION_ID];
+            $pushingService->post($distributionId, DistributionStates::DISTRIBUTION_STATES_PROCESSING);
+            $requestId = $this->data[Distributions::COL_DISTRIBUTION_REQUEST_ID];
             $designImportRequestsRepository = new DesignImportRequestsRepository();
             $designData = $designImportRequestsRepository->getByRequestId($requestId);
             if ($designData->design_details_status && $designData->design_details_status !== DesignImportRequestDetails::STATUS_FAILED) {
-                throw new Exception(); 
+                throw new Exception('Design status invalid to processing');
             }
             
             //$this->categories => API production
@@ -140,12 +128,11 @@ class PullDesignJob implements ShouldQueue
                 ]
             );
             if ($response) {
-                $pushingService->post($distributionQueueId, DistributionStates::DISTRIBUTION_STATES_COMPLETED);
+                $pushingService->post($distributionId, DistributionStates::DISTRIBUTION_STATES_COMPLETED);
             }
         } catch (Exception $e) {
             if (!empty($e->getMessage())) {
-                $pushingService = new PushingService();
-                $pushingService->post($distributionQueueId, DistributionStates::DISTRIBUTION_STATES_FAILED, $e->getMessage());
+                $pushingService->post($distributionId, DistributionStates::DISTRIBUTION_STATES_FAILED, $e->getMessage());
                 DesignImportRequestDetails::where(
                     [
                         DesignImportRequestDetails::COL_DESIGN_ID => $requestId

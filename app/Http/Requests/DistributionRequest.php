@@ -21,7 +21,7 @@ class DistributionRequest extends FormRequest
     public function rules()
     {
         return [
-            'distribution_request' => 'required|array|min:2',
+            'distribution_request' => 'required|array|min:1',
             'distribution_request.*.distribution_request_id' => 'required',
             'distribution_request.*.distribution_job_name' => 'required'
 
