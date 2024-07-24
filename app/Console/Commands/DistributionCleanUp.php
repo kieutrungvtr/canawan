@@ -52,6 +52,6 @@ class DistributionCleanUp extends Command
         $batch = intval(config('distribution.batch'));
         $pushingService = new PushingService();
         $pushingService->backlogFlag(true);
-        $response = $pushingService->process($job, $batch, $tries, $timeRange);
+        $pushingService->process($job, $batch, $tries, $timeRange);
     }
 }

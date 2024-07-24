@@ -13,7 +13,9 @@ class DistributionPushing extends Command
      *
      * @var string
      */
-    protected $signature = 'distribution:pushing {--request_id=} {--sync=}';
+    protected $signature = 'distribution:pushing 
+                            {job : Job name, must not be empty}
+                            {--request_id=} {--sync=}';
 
     /**
      * The console command description.
@@ -27,7 +29,7 @@ class DistributionPushing extends Command
      */
     public function handle()
     {
-        //ELogger::info("messege", ["context" => "test"]);
+        $jobName = $this->argument('job') ?? null;
         $requestId = $this->option('request_id') ?? null;
         $sync = $this->option('sync') ?? null;
         $batch = intval(config('distribution.batch'));
@@ -38,8 +40,7 @@ class DistributionPushing extends Command
         if ($sync) {
             $pushingService->optionSync($sync);
         }
-        $res = $pushingService->process('PullDesignJob', $batch);
-        print_r($res->getContent());
+        $pushingService->process($jobName, $batch);
     }
 
 }

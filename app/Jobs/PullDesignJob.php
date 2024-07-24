@@ -44,7 +44,7 @@ class PullDesignJob implements ShouldQueue
 
     public function middleware()
     {
-        return [(new WithoutOverlapping(Distributions::COL_DISTRIBUTION_REQUEST_ID))->dontRelease()];
+        return [(new WithoutOverlapping($this->data[Distributions::COL_DISTRIBUTION_ID]))->dontRelease()];
     }
 
     /**
@@ -56,13 +56,13 @@ class PullDesignJob implements ShouldQueue
             $pushingService = new PushingService();
             $distributionId = $this->data[Distributions::COL_DISTRIBUTION_ID];
             $pushingService->post($distributionId, DistributionStates::DISTRIBUTION_STATES_PROCESSING);
+
             $requestId = $this->data[Distributions::COL_DISTRIBUTION_REQUEST_ID];
             $designImportRequestsRepository = new DesignImportRequestsRepository();
             $designData = $designImportRequestsRepository->getByRequestId($requestId);
             if ($designData->design_details_status && $designData->design_details_status !== DesignImportRequestDetails::STATUS_FAILED) {
                 throw new Exception('Design status invalid to processing');
             }
-            
             //$this->categories => API production
             // $productType = array_filter($this->categories, function ($category) use ($designData) {
             //     return $category['id'] == $designData->{DesignImportRequests::COL_CATEGORY_CATALOG_ID};

@@ -121,21 +121,14 @@ class PushingService
         }
         try {
             foreach ($distributions as $key => $distribution) {
+                $distribution = (array)$distribution;
                 $countRequest = $key + 1;
-                $uuid = $distribution[Distributions::COL_DISTRIBUTION_REQUEST_ID];  
-                $payload = json_decode($distribution[Distributions::COL_DISTRIBUTION_PAYLOAD], true);
-                $designName = $payload['name'] ?? '';
-                $url = $payload['url'] ?? '';
-                echo PHP_EOL;
-                print_r("Request $countRequest : $uuid >> $designName >> Url: $url");
-                echo PHP_EOL;
                 $jobInstance = "\\App\\Jobs\\$jobName";
                 $jobs = new $jobInstance($distribution);
                 if ($this->optionSync) {
                     dispatch_sync($jobs);
                 } else {
                     Queue::pushOn($this->queueName($jobName), $jobs);
-                    //$jobInstance::dispatch($value)->onQueue($this->queueName($jobName));
                 }
                 $this->pre($distribution[Distributions::COL_DISTRIBUTION_ID]);
                 if ($this->backLogFlag) {

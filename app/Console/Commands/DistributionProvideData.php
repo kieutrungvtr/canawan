@@ -47,7 +47,6 @@ class DistributionProvideData extends Command
         }
         $data = $data->merge($tmp);
         $pushingService = new PushingService();
-        $res = $pushingService->init($data);
-        var_dump($res);
+        $pushingService->init($data);
     }
 }
